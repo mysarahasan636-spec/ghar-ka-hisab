@@ -67,6 +67,7 @@
         <h1>گھر کا حساب</h1>
       </div>
       <div class="topbar-actions">
+        <button id="btn-theme" class="icon-btn" aria-label="ڈارک موڈ" title="ڈارک موڈ">🌙</button>
         <button id="btn-settings" class="icon-btn" aria-label="سیٹنگز" title="سیٹنگز">⚙️</button>
       </div>
     </div>
@@ -82,7 +83,7 @@
 
     <!-- خلاصہ کارڈز -->
     <section class="summary-grid">
-      <div class="sum-card sum-card-wide">
+      <div class="sum-card sum-card-income">
         <span class="sum-icon">💰</span>
         <span class="sum-label">ماہانہ آمدن</span>
         <span class="sum-value" id="sum-income">₹0</span>
@@ -94,26 +95,53 @@
       </div>
       <div class="sum-card">
         <span class="sum-icon">📊</span>
-        <span class="sum-label">مجموعی ماہانہ خرچ</span>
+        <span class="sum-label">اس ماہ کا خرچ</span>
         <span class="sum-value" id="sum-total">₹0</span>
       </div>
-      <div class="sum-card">
-        <span class="sum-icon">🏦</span>
-        <span class="sum-label">ماہانہ بچت</span>
-        <span class="sum-value" id="sum-savings">₹0</span>
-      </div>
-      <div class="sum-card sum-card-accent">
+      <div class="sum-card sum-card-positive">
         <span class="sum-icon">💵</span>
-        <span class="sum-label">باقی رقم</span>
+        <span class="sum-label">دستیاب رقم</span>
         <span class="sum-value" id="sum-remaining">₹0</span>
       </div>
     </section>
 
-    <button id="btn-add-entry" class="fab-inline">＋ نیا خرچ</button>
+    <!-- بچت کا ہدف -->
+    <section class="panel saving-panel">
+      <h2 class="panel-title">🏦 ماہانہ بچت</h2>
+      <div id="saving-with-goal">
+        <div class="saving-row">
+          <div><span class="saving-label">مقررہ ہدف</span><span class="saving-amt" id="saving-goal-amt">₹0</span></div>
+          <div><span class="saving-label">اب تک بچت</span><span class="saving-amt" id="saving-current-amt">₹0</span></div>
+          <div><span class="saving-label">باقی ہدف</span><span class="saving-amt" id="saving-left-amt">₹0</span></div>
+        </div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" id="saving-bar-fill" style="width:0%"></div></div>
+        <div class="cat-budget-note" id="saving-pct-note">0%</div>
+      </div>
+      <p class="empty-note hidden" id="saving-no-goal">ابھی ماہانہ بچت کا ہدف مقرر نہیں کیا گیا — سیٹنگز میں جا کر مقرر کریں۔</p>
+    </section>
+
+    <!-- مجموعی بجٹ کا خلاصہ -->
+    <section class="panel">
+      <h2 class="panel-title">🎯 ماہانہ بجٹ</h2>
+      <div id="budget-overview-set">
+        <div class="budget-ov-row">
+          <span>کل مقررہ بجٹ</span><span id="bo-total-budget">₹0</span>
+        </div>
+        <div class="budget-ov-row">
+          <span>کل خرچ</span><span id="bo-total-spent">₹0</span>
+        </div>
+        <div class="budget-ov-row budget-ov-strong">
+          <span>باقی بجٹ</span><span id="bo-remaining">₹0</span>
+        </div>
+        <div class="cat-bar-track"><div class="cat-bar-fill" id="bo-bar-fill" style="width:0%"></div></div>
+        <div class="cat-budget-note" id="bo-pct-note">0% استعمال</div>
+      </div>
+      <p class="empty-note hidden" id="budget-overview-empty">ابھی کسی مد کے لیے بجٹ مقرر نہیں کیا گیا۔</p>
+    </section>
 
     <!-- تجزیہ -->
     <section class="panel">
-      <h2 class="panel-title">📊 اس ماہ کے اخراجات</h2>
+      <h2 class="panel-title">📊 اس ماہ خرچ کہاں ہوا؟</h2>
       <div id="chart-wrap" class="chart-wrap">
         <p class="empty-note" id="chart-empty">ابھی کوئی خرچ درج نہیں ہوا۔</p>
         <svg id="chart-svg" class="hidden" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
@@ -121,10 +149,10 @@
       <ul id="top-list" class="top-list"></ul>
     </section>
 
-    <!-- مدات -->
+    <!-- مدات: بجٹ اور خرچ -->
     <section class="panel">
       <h2 class="panel-title">🧾 اخراجات کی مدات</h2>
-      <ul id="category-list" class="category-list"></ul>
+      <div id="category-list" class="category-grid"></div>
     </section>
 
     <!-- حالیہ اندراجات -->
@@ -135,6 +163,8 @@
     </section>
 
   </main>
+
+  <button id="btn-add-entry" class="fab-sticky">＋ نیا خرچ</button>
 </div>
 
 <!-- ============== نیا خرچ / بچت modal ============== -->
@@ -193,6 +223,13 @@
         <input id="settings-income" type="number" min="0" step="1" dir="ltr">
       </label>
       <button id="btn-save-income" class="btn btn-primary btn-block">آمدن محفوظ کریں</button>
+    </div>
+
+    <div class="settings-section">
+      <label>ماہانہ بچت کا ہدف
+        <input id="settings-saving-goal" type="number" min="0" step="1" dir="ltr" placeholder="مثلاً 5000">
+      </label>
+      <button id="btn-save-saving-goal" class="btn btn-secondary btn-block">بچت کا ہدف محفوظ کریں</button>
     </div>
 
     <div class="settings-section">
