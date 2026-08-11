@@ -232,6 +232,8 @@ button, input, select{ font-family: inherit; font-size: 1rem; color: inherit; }
 .cat-bar-fill.warn{ background: var(--gold); }
 .cat-bar-fill.over{ background: var(--rust); }
 .cat-budget-note{ font-size:.72rem; color: var(--muted); margin-top:3px; }
+.cat-budget-note.warn{ color: var(--gold); font-weight:600; }
+.cat-budget-note.over{ color: var(--rust); font-weight:600; }
 
 /* حالیہ اندراجات */
 .recent-list{ list-style:none; margin:0; padding:0; }
