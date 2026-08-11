@@ -7,8 +7,8 @@ const CATEGORIES = [
   { key: 'bills',         label: 'بل اور ضروری خدمات',          icon: '🧾',
     subs: ['بجلی کا بل', 'پانی کا بل', 'دودھ کا خرچ', 'موبائل کا بل'] },
   { key: 'sauda',         label: 'ماہانہ سودا سلف',             icon: '🛒' },
- { key: 'jaib_kharch_mother', label: 'والدہ کا جیب خرچ', icon: '🤲' },
-{ key: 'jaib_kharch_wife', label: 'اہلیہ کا جیب خرچ', icon: '🤲' },
+  { key: 'petrol',        label: 'گاڑی کا پیٹرول',              icon: '⛽' },
+  { key: 'jaib_kharch',   label: 'والدہ اور اہلیہ کا جیب خرچ',   icon: '🤲' },
   { key: 'ghair_mutawaqqa', label: 'غیر متوقع اخراجات',          icon: '⚠️',
     subs: ['دوا', 'ہوٹل کا کھانا', 'دیگر'] },
   { key: 'jumma_dawat',   label: 'جمعرات کی دعوت',              icon: '🍽️' },
@@ -221,10 +221,19 @@ function renderCategoryList(expenseEntries){
     let barHtml = '';
     let noteHtml = '';
     if(budget){
-      const pct = Math.min(100, Math.round((amount/budget)*100));
-      const cls = amount >= budget ? 'over' : (pct >= 90 ? 'warn' : '');
+      const rawPct = Math.round((amount/budget)*100);
+      const pct = Math.min(100, rawPct);
+      const over = amount - budget;
+      const cls = amount > budget ? 'over' : (pct >= 90 ? 'warn' : '');
       barHtml = `<div class="cat-bar-track"><div class="cat-bar-fill ${cls}" style="width:${pct}%"></div></div>`;
-      noteHtml = `<div class="cat-budget-note">${fmtMoney(amount)} / ${fmtMoney(budget)}${amount >= budget ? ' — ⚠️ بجٹ مکمل ہوچکا ہے' : ''}</div>`;
+
+      let statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — ${rawPct}% استعمال ہوا`;
+      if(amount > budget){
+        statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — ⚠️ ${fmtMoney(over)} مقررہ بجٹ سے زائد خرچ ہوچکا ہے`;
+      } else if(amount === budget){
+        statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — بجٹ مکمل ہوچکا ہے`;
+      }
+      noteHtml = `<div class="cat-budget-note ${cls}">${statusText}</div>`;
     }
 
     li.innerHTML = `
