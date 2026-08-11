@@ -56,6 +56,27 @@ function showSync(msg){
   showSync._tm = setTimeout(()=> b.classList.remove('show'), 1600);
 }
 
+/* ---------------- ڈارک موڈ ---------------- */
+function initTheme(){
+  const saved = localStorage.getItem('ghk_theme');
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = saved || (prefersDark ? 'dark' : 'light');
+  applyTheme(theme);
+}
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('btn-theme');
+  if(btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', theme === 'dark' ? '#10231C' : '#1F5C4F');
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('ghk_theme', next);
+  applyTheme(next);
+}
+
 /* ---------------- Config / Setup ---------------- */
 function loadConfig(){
   try{
@@ -192,12 +213,78 @@ function renderAll(){
   document.getElementById('sum-income').textContent = fmtMoney(state.income);
   document.getElementById('sum-today').textContent = fmtMoney(todayExpense);
   document.getElementById('sum-total').textContent = fmtMoney(totalExpense);
-  document.getElementById('sum-savings').textContent = fmtMoney(totalSaving);
   document.getElementById('sum-remaining').textContent = fmtMoney(remaining);
 
+  renderSavingCard(totalSaving);
   renderCategoryList(expenseEntries);
+  renderBudgetOverview(expenseEntries);
   renderChart(expenseEntries);
   renderRecent();
+}
+
+function renderSavingCard(totalSaving){
+  const goal = Number(state.budgets['saving_goal']) || 0;
+  const withGoal = document.getElementById('saving-with-goal');
+  const noGoal = document.getElementById('saving-no-goal');
+
+  if(!goal){
+    withGoal.classList.add('hidden');
+    noGoal.classList.remove('hidden');
+    return;
+  }
+  withGoal.classList.remove('hidden');
+  noGoal.classList.add('hidden');
+
+  const left = goal - totalSaving;
+  const rawPct = Math.round((totalSaving/goal)*100);
+  const pct = Math.min(100, rawPct);
+
+  document.getElementById('saving-goal-amt').textContent = fmtMoney(goal);
+  document.getElementById('saving-current-amt').textContent = fmtMoney(totalSaving);
+  document.getElementById('saving-left-amt').textContent = left > 0 ? fmtMoney(left) : '₹0';
+
+  const fill = document.getElementById('saving-bar-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'cat-bar-fill' + (totalSaving >= goal ? ' over' : '');
+
+  document.getElementById('saving-pct-note').textContent =
+    totalSaving >= goal ? `🎉 ہدف مکمل ہوگیا — ${rawPct}%` : `${rawPct}% مکمل`;
+}
+
+function renderBudgetOverview(expenseEntries){
+  const totals = categoryTotals(expenseEntries);
+  const budgetedCats = CATEGORIES.filter(c => state.budgets[c.key]);
+  const wrap = document.getElementById('budget-overview-set');
+  const empty = document.getElementById('budget-overview-empty');
+
+  if(budgetedCats.length === 0){
+    wrap.classList.add('hidden');
+    empty.classList.remove('hidden');
+    return;
+  }
+  wrap.classList.remove('hidden');
+  empty.classList.add('hidden');
+
+  const totalBudget = budgetedCats.reduce((s,c)=> s + Number(state.budgets[c.key]), 0);
+  const totalSpent = budgetedCats.reduce((s,c)=> s + (totals[c.key]||0), 0);
+  const remaining = totalBudget - totalSpent;
+  const rawPct = Math.round((totalSpent/totalBudget)*100);
+  const pct = Math.min(100, rawPct);
+  const over = totalSpent > totalBudget;
+
+  document.getElementById('bo-total-budget').textContent = fmtMoney(totalBudget);
+  document.getElementById('bo-total-spent').textContent = fmtMoney(totalSpent);
+  document.getElementById('bo-remaining').textContent = remaining < 0 ? '− ' + fmtMoney(Math.abs(remaining)) : fmtMoney(remaining);
+  document.getElementById('bo-remaining').className = remaining < 0 ? 'over-text' : '';
+
+  const fill = document.getElementById('bo-bar-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'cat-bar-fill' + (over ? ' over' : (pct >= 90 ? ' warn' : ''));
+
+  document.getElementById('bo-pct-note').textContent = over
+    ? `⚠️ بجٹ سے ${fmtMoney(totalSpent-totalBudget)} تجاوز`
+    : `${rawPct}% استعمال`;
+  document.getElementById('bo-pct-note').className = 'cat-budget-note' + (over ? ' over' : (pct >= 90 ? ' warn' : ''));
 }
 
 function categoryTotals(expenseEntries){
@@ -215,8 +302,8 @@ function renderCategoryList(expenseEntries){
   CATEGORIES.forEach(c => {
     const amount = totals[c.key] || 0;
     const budget = state.budgets[c.key];
-    const li = document.createElement('li');
-    li.className = 'cat-row';
+    const card = document.createElement('div');
+    card.className = 'cat-card';
 
     let barHtml = '';
     let noteHtml = '';
@@ -227,35 +314,28 @@ function renderCategoryList(expenseEntries){
       const cls = amount > budget ? 'over' : (pct >= 90 ? 'warn' : '');
       barHtml = `<div class="cat-bar-track"><div class="cat-bar-fill ${cls}" style="width:${pct}%"></div></div>`;
 
-      let statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — ${rawPct}% استعمال ہوا`;
+      let statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — ${rawPct}% استعمال — ✅ بجٹ کے اندر`;
       if(amount > budget){
-        statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — ⚠️ ${fmtMoney(over)} مقررہ بجٹ سے زائد خرچ ہوچکا ہے`;
-      } else if(amount === budget){
-        statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — بجٹ مکمل ہوچکا ہے`;
+        statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — 🚨 بجٹ سے ${fmtMoney(over)} زائد`;
+      } else if(pct >= 90){
+        statusText = `${fmtMoney(amount)} / ${fmtMoney(budget)} — ⚠️ بجٹ قریب ہے (${rawPct}%)`;
       }
       noteHtml = `<div class="cat-budget-note ${cls}">${statusText}</div>`;
+    } else {
+      noteHtml = `<div class="cat-budget-note">بجٹ مقرر نہیں</div>`;
     }
 
-    li.innerHTML = `
+    card.innerHTML = `
       <div class="cat-row-top">
         <span class="cat-name">${c.icon} ${c.label}</span>
         <span class="cat-amount">${fmtMoney(amount)}</span>
       </div>
       ${barHtml}${noteHtml}
     `;
-    list.appendChild(li);
+    list.appendChild(card);
   });
 
-  // بچت الگ دکھائیں
-  const savingTotal = state.entries.filter(e=>e.entry_type==='saving').reduce((s,e)=>s+Number(e.amount),0);
-  const li = document.createElement('li');
-  li.className = 'cat-row';
-  li.innerHTML = `
-    <div class="cat-row-top">
-      <span class="cat-name">${SAVING_ICON} ${SAVING_LABEL}</span>
-      <span class="cat-amount">${fmtMoney(savingTotal)}</span>
-    </div>`;
-  list.appendChild(li);
+  // بچت الگ کارڈ میں اوپر دکھائی جاتی ہے (renderSavingCard)
 }
 
 function renderChart(expenseEntries){
@@ -466,6 +546,7 @@ function buildBudgetFields(){
 
 function openSettingsModal(){
   document.getElementById('settings-income').value = state.income || '';
+  document.getElementById('settings-saving-goal').value = state.budgets['saving_goal'] || '';
   CATEGORIES.forEach(c=>{
     const el = document.getElementById('budget-' + c.key);
     el.value = state.budgets[c.key] || '';
@@ -493,14 +574,28 @@ async function saveBudgets(){
     const v = document.getElementById('budget-' + c.key).value;
     return v ? { household_id: cfg.householdId, category: c.key, month: mk, limit_amount: Number(v) } : null;
   }).filter(Boolean);
+  const catKeys = CATEGORIES.map(c => c.key);
 
-  // پہلے اس مہینے کے پرانے بجٹ ہٹائیں پھر نئے لکھیں
-  await sb.from('budgets').delete().eq('household_id', cfg.householdId).eq('month', mk);
+  // صرف اسی مہینے کی مدات کا پرانا بجٹ ہٹائیں — بچت کا ہدف محفوظ رہے
+  await sb.from('budgets').delete().eq('household_id', cfg.householdId).eq('month', mk).in('category', catKeys);
   if(rows.length){
     const { error } = await sb.from('budgets').insert(rows);
     if(error){ showToast('بجٹ محفوظ کرنے میں مسئلہ پیش آیا'); return; }
   }
   showToast('بجٹ محفوظ ہوگیا ✅');
+  await loadMonth();
+}
+
+async function saveSavingGoal(){
+  const mk = monthKey(viewDate);
+  const val = Number(document.getElementById('settings-saving-goal').value) || 0;
+
+  await sb.from('budgets').delete().eq('household_id', cfg.householdId).eq('month', mk).eq('category', 'saving_goal');
+  if(val > 0){
+    const { error } = await sb.from('budgets').insert({ household_id: cfg.householdId, category: 'saving_goal', month: mk, limit_amount: val });
+    if(error){ showToast('بچت کا ہدف محفوظ کرنے میں مسئلہ پیش آیا'); return; }
+  }
+  showToast('بچت کا ہدف محفوظ ہوگیا ✅');
   await loadMonth();
 }
 
@@ -527,8 +622,10 @@ function wireEvents(){
   });
 
   document.getElementById('btn-settings').addEventListener('click', openSettingsModal);
+  document.getElementById('btn-theme').addEventListener('click', toggleTheme);
   document.getElementById('settings-close').addEventListener('click', closeSettingsModal);
   document.getElementById('btn-save-income').addEventListener('click', saveIncome);
+  document.getElementById('btn-save-saving-goal').addEventListener('click', saveSavingGoal);
   document.getElementById('btn-save-budgets').addEventListener('click', saveBudgets);
   document.getElementById('btn-signout').addEventListener('click', signOut);
   document.getElementById('btn-copy-code').addEventListener('click', ()=>{
@@ -550,6 +647,7 @@ function wireEvents(){
 window.addEventListener('DOMContentLoaded', async ()=>{
   wireEvents();
   initSetupScreen();
+  initTheme();
 
   cfg = loadConfig();
   if(cfg && cfg.url && cfg.key && cfg.householdId){
