@@ -21,6 +21,30 @@
   --font-num: 'Inter', sans-serif;
 }
 
+:root[data-theme="dark"]{
+  --bg: #10231C;
+  --surface: #17322A;
+  --surface-2: #1D3B31;
+  --ink: #EAF3EE;
+  --ink-soft: #B7CBC2;
+  --muted: #7E9A8E;
+  --line: #2B4B40;
+  --primary: #4FA98C;
+  --primary-dark: #A9E4CD;
+  --primary-tint: rgba(79,169,140,.16);
+  --gold: #E0B15C;
+  --gold-tint: rgba(224,177,92,.14);
+  --rust: #E58B65;
+  --rust-tint: rgba(229,139,101,.14);
+  --shadow-card: 0 1px 2px rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.3);
+}
+:root[data-theme="dark"] body{
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 34px);
+}
+:root[data-theme="dark"] .topbar{ box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+:root[data-theme="dark"] .brand-mini h1{ color:#fff; }
+
 *{ box-sizing: border-box; }
 
 html,body{ margin:0; padding:0; }
@@ -131,6 +155,7 @@ button, input, select{ font-family: inherit; font-size: 1rem; color: inherit; }
   box-shadow: 0 4px 14px rgba(18,58,49,.25);
 }
 .topbar-row{ display:flex; align-items:center; justify-content:space-between; }
+.topbar-actions{ display:flex; align-items:center; gap:8px; }
 .brand-mini{ display:flex; align-items:center; gap:8px; }
 .brand-icon-sm{ font-size:1.3rem; }
 .brand-mini h1{ font-size: 1.35rem; color:#fff; }
@@ -156,7 +181,7 @@ button, input, select{ font-family: inherit; font-size: 1rem; color: inherit; }
 .sync-badge.show{ opacity:1; max-height:22px; padding:4px 0; }
 
 /* ---------- مواد ---------- */
-.content{ padding: 18px 16px 90px; }
+.content{ padding: 18px 16px calc(96px + env(safe-area-inset-bottom)); }
 
 .summary-grid{
   display:grid;
@@ -170,26 +195,35 @@ button, input, select{ font-family: inherit; font-size: 1rem; color: inherit; }
   padding: 14px 14px 12px;
   box-shadow: var(--shadow-card);
   display:flex; flex-direction:column; gap:4px;
-  border-right: 3px solid var(--primary);
+  border-right: 3px solid var(--line);
   position: relative;
+  min-width: 0;
 }
-.sum-card-wide{ grid-column: 1 / -1; border-right-color: var(--gold); }
-.sum-card-accent{ grid-column: 1 / -1; background: var(--primary); color:#fff; border-right-color: var(--gold); }
-.sum-card-accent .sum-label{ color: rgba(255,255,255,.8); }
+.sum-card-income{ border-right-color: var(--primary); }
+.sum-card-positive{ border-right-color: var(--primary); }
 .sum-icon{ font-size:1.15rem; }
-.sum-label{ font-size:.78rem; color: var(--muted); }
-.sum-value{ font-size:1.5rem; font-weight:700; color: var(--primary-dark); }
-.sum-card-accent .sum-value{ color:#fff; }
+.sum-label{ font-size:.76rem; color: var(--muted); white-space: nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sum-value{ font-size:1.32rem; font-weight:700; color: var(--primary-dark); }
 
-.fab-inline{
-  display:block; width:100%;
+@media (max-width: 359px){
+  .sum-value{ font-size:1.15rem; }
+}
+
+.fab-sticky{
+  position: fixed;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 528px;
   background: var(--gold);
   color:#fff; border:none; border-radius: 999px;
-  padding: 14px; font-weight:700; font-size:1.02rem;
-  box-shadow: 0 6px 16px rgba(184,135,59,.35);
-  margin-bottom: 18px; cursor:pointer;
+  padding: 15px; font-weight:700; font-size:1.02rem;
+  box-shadow: 0 8px 22px rgba(184,135,59,.4);
+  cursor:pointer;
+  z-index: 20;
 }
-.fab-inline:active{ background:#9a7331; }
+.fab-sticky:active{ background:#9a7331; }
 
 .panel{
   background: var(--surface);
@@ -201,6 +235,32 @@ button, input, select{ font-family: inherit; font-size: 1rem; color: inherit; }
 .panel-title{ font-size:1.08rem; color: var(--primary-dark); margin-bottom: 12px; }
 
 .empty-note{ color: var(--muted); font-size:.88rem; text-align:center; padding: 10px 0; }
+
+/* بچت کا ہدف */
+.saving-panel .panel-title{ margin-bottom: 10px; }
+.saving-row{
+  display:grid; grid-template-columns: repeat(3, 1fr); gap:8px;
+  margin-bottom: 10px;
+}
+.saving-row > div{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.saving-label{ font-size:.7rem; color: var(--muted); }
+.saving-amt{
+  font-family: var(--font-num); font-variant-numeric: tabular-nums;
+  font-weight:700; color: var(--primary-dark); font-size:1rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* مجموعی بجٹ کا خلاصہ */
+.budget-ov-row{
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:.92rem; color: var(--ink-soft); padding: 4px 0;
+}
+.budget-ov-row span:last-child{
+  font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight:600; color: var(--ink);
+}
+.budget-ov-strong{ border-top: 1px dashed var(--line); margin-top:4px; padding-top:8px; }
+.budget-ov-strong span:last-child{ font-size:1.05rem; color: var(--primary-dark); }
+.over-text{ color: var(--rust) !important; }
 
 /* چارٹ */
 .chart-wrap{ margin-bottom: 8px; }
@@ -214,26 +274,35 @@ button, input, select{ font-family: inherit; font-size: 1rem; color: inherit; }
 .top-list li:last-child{ border-bottom:none; }
 .top-list .rank{ margin-inline-end:6px; }
 
-/* مدات کی فہرست */
-.category-list{ list-style:none; margin:0; padding:0; }
-.cat-row{
-  padding: 10px 0;
-  border-bottom: 1px dashed var(--line);
+/* مدات: بجٹ اور خرچ کارڈز */
+.category-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
-.cat-row:last-child{ border-bottom:none; }
+.cat-card{
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 12px 13px;
+}
 .cat-row-top{
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom: 4px;
+  gap: 8px;
 }
-.cat-name{ display:flex; align-items:center; gap:8px; font-size:.95rem; }
-.cat-amount{ font-weight:600; color: var(--primary-dark); }
-.cat-bar-track{ height:6px; border-radius:4px; background: var(--surface-2); overflow:hidden; }
-.cat-bar-fill{ height:100%; background: var(--primary); border-radius:4px; }
+.cat-name{ display:flex; align-items:center; gap:8px; font-size:.93rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cat-amount{ font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight:700; color: var(--primary-dark); white-space:nowrap; }
+.cat-bar-fill{ height:100%; background: var(--primary); border-radius:4px; transition: width .3s; }
 .cat-bar-fill.warn{ background: var(--gold); }
 .cat-bar-fill.over{ background: var(--rust); }
-.cat-budget-note{ font-size:.72rem; color: var(--muted); margin-top:3px; }
+.cat-budget-note{ font-size:.72rem; color: var(--muted); margin-top:5px; }
 .cat-budget-note.warn{ color: var(--gold); font-weight:600; }
 .cat-budget-note.over{ color: var(--rust); font-weight:600; }
+
+@media (min-width: 480px){
+  .category-grid{ grid-template-columns: 1fr 1fr; }
+}
 
 /* حالیہ اندراجات */
 .recent-list{ list-style:none; margin:0; padding:0; }
@@ -309,6 +378,4 @@ button, input, select{ font-family: inherit; font-size: 1rem; color: inherit; }
 
 @media (min-width: 640px){
   .summary-grid{ grid-template-columns: repeat(4, 1fr); }
-  .sum-card-wide{ grid-column: span 2; }
-  .sum-card-accent{ grid-column: span 2; }
 }
