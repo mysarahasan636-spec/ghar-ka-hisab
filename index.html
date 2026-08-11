@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>گھر کا حساب</title>
+<meta name="theme-color" content="#1F5C4F">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;700&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============== سیٹ اپ اسکرین ============== -->
+<div id="setup-screen" class="screen hidden">
+  <div class="setup-card">
+    <div class="brand">
+      <span class="brand-icon">🏠</span>
+      <h1>گھر کا حساب</h1>
+      <p class="tagline">آمدن، اخراجات اور بچت — ایک نظر میں</p>
+    </div>
+
+    <p class="setup-note">
+      یہ ایپ آپ اور اہلیہ کے فون میں ایک ہی حساب دکھائے گی۔ اسے پہلی بار
+      چلانے کے لیے اپنے Supabase پراجیکٹ کی تفصیلات یہاں درج کریں — یہ صرف
+      ایک بار کرنا ہوگا۔ اگر آپ نے پہلے سے یہ ایپ اپنے کسی دوسرے فون پر
+      سیٹ کی ہے تو وہیں سے یہ تین چیزیں کاپی کر لیں۔
+    </p>
+
+    <form id="setup-form">
+      <label>آپ کا نام
+        <select id="setup-name" required>
+          <option value="">منتخب کریں</option>
+        </select>
+      </label>
+      <label id="custom-name-wrap" class="hidden">نام لکھیں
+        <input id="setup-name-custom" type="text" placeholder="مثلاً مناظر">
+      </label>
+
+      <label>Supabase Project URL
+        <input id="setup-url" type="text" placeholder="https://xxxxx.supabase.co" required dir="ltr">
+      </label>
+      <label>Supabase anon public key
+        <input id="setup-key" type="text" placeholder="eyJhbGciOi..." required dir="ltr">
+      </label>
+      <label>خاندانی کوڈ (Household ID)
+        <input id="setup-household" type="text" placeholder="پہلی بار خالی چھوڑیں — خودکار بن جائے گا" dir="ltr">
+      </label>
+      <p class="field-hint">دوسرے فون پر یہی خاندانی کوڈ درج کریں تاکہ دونوں کا حساب ایک ہو جائے۔</p>
+
+      <button type="submit" class="btn btn-primary btn-block">شروع کریں</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============== مرکزی ایپ ============== -->
+<div id="app-screen" class="screen hidden">
+
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand-mini">
+        <span class="brand-icon-sm">🏠</span>
+        <h1>گھر کا حساب</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-settings" class="icon-btn" aria-label="سیٹنگز" title="سیٹنگز">⚙️</button>
+      </div>
+    </div>
+    <div class="month-tabs" id="month-tabs">
+      <button id="month-prev" class="month-nav" aria-label="پچھلا مہینہ">‹</button>
+      <span id="month-label" class="month-label">اگست 2026</span>
+      <button id="month-next" class="month-nav" aria-label="اگلا مہینہ">›</button>
+    </div>
+    <div id="sync-badge" class="sync-badge">🔄 مربوط (Sync) ہو رہا ہے…</div>
+  </header>
+
+  <main class="content">
+
+    <!-- خلاصہ کارڈز -->
+    <section class="summary-grid">
+      <div class="sum-card sum-card-wide">
+        <span class="sum-icon">💰</span>
+        <span class="sum-label">ماہانہ آمدن</span>
+        <span class="sum-value" id="sum-income">₹0</span>
+      </div>
+      <div class="sum-card">
+        <span class="sum-icon">📅</span>
+        <span class="sum-label">آج کا خرچ</span>
+        <span class="sum-value" id="sum-today">₹0</span>
+      </div>
+      <div class="sum-card">
+        <span class="sum-icon">📊</span>
+        <span class="sum-label">مجموعی ماہانہ خرچ</span>
+        <span class="sum-value" id="sum-total">₹0</span>
+      </div>
+      <div class="sum-card">
+        <span class="sum-icon">🏦</span>
+        <span class="sum-label">ماہانہ بچت</span>
+        <span class="sum-value" id="sum-savings">₹0</span>
+      </div>
+      <div class="sum-card sum-card-accent">
+        <span class="sum-icon">💵</span>
+        <span class="sum-label">باقی رقم</span>
+        <span class="sum-value" id="sum-remaining">₹0</span>
+      </div>
+    </section>
+
+    <button id="btn-add-entry" class="fab-inline">＋ نیا خرچ</button>
+
+    <!-- تجزیہ -->
+    <section class="panel">
+      <h2 class="panel-title">📊 اس ماہ کے اخراجات</h2>
+      <div id="chart-wrap" class="chart-wrap">
+        <p class="empty-note" id="chart-empty">ابھی کوئی خرچ درج نہیں ہوا۔</p>
+        <svg id="chart-svg" class="hidden" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      </div>
+      <ul id="top-list" class="top-list"></ul>
+    </section>
+
+    <!-- مدات -->
+    <section class="panel">
+      <h2 class="panel-title">🧾 اخراجات کی مدات</h2>
+      <ul id="category-list" class="category-list"></ul>
+    </section>
+
+    <!-- حالیہ اندراجات -->
+    <section class="panel">
+      <h2 class="panel-title">🕘 حالیہ اندراجات</h2>
+      <ul id="recent-list" class="recent-list"></ul>
+      <p class="empty-note hidden" id="recent-empty">اس ماہ ابھی کوئی اندراج نہیں۔</p>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============== نیا خرچ / بچت modal ============== -->
+<div id="entry-modal" class="modal-backdrop hidden">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <h3 id="entry-modal-title">＋ نیا خرچ</h3>
+      <button class="icon-btn" id="entry-close" aria-label="بند کریں">✕</button>
+    </div>
+    <form id="entry-form">
+      <input type="hidden" id="entry-id">
+
+      <div class="seg-control" id="entry-type-seg">
+        <button type="button" class="seg-btn active" data-type="expense">خرچ</button>
+        <button type="button" class="seg-btn" data-type="saving">بچت</button>
+      </div>
+
+      <label>رقم
+        <input id="entry-amount" type="number" min="0" step="1" inputmode="decimal" placeholder="₹ 0" required dir="ltr">
+      </label>
+
+      <label id="entry-cat-wrap">خرچ کی مد
+        <select id="entry-category"></select>
+      </label>
+
+      <label id="entry-sub-wrap" class="hidden">ذیلی مد
+        <select id="entry-subcategory"></select>
+      </label>
+
+      <label>تاریخ
+        <input id="entry-date" type="date" required dir="ltr">
+      </label>
+
+      <label>تفصیل / نوٹ
+        <input id="entry-note" type="text" placeholder="مثلاً بکرے کا گوشت">
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" id="entry-delete" class="btn btn-danger hidden">حذف کریں</button>
+        <button type="submit" class="btn btn-primary btn-block">محفوظ کریں</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============== سیٹنگز modal ============== -->
+<div id="settings-modal" class="modal-backdrop hidden">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <h3>⚙️ سیٹنگز</h3>
+      <button class="icon-btn" id="settings-close" aria-label="بند کریں">✕</button>
+    </div>
+
+    <div class="settings-section">
+      <label>ماہانہ آمدن
+        <input id="settings-income" type="number" min="0" step="1" dir="ltr">
+      </label>
+      <button id="btn-save-income" class="btn btn-primary btn-block">آمدن محفوظ کریں</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>🎯 ماہانہ بجٹ (فی مد)</h4>
+      <p class="field-hint">جس مد کے لیے حد مقرر کرنی ہو، رقم لکھیں۔ خالی چھوڑنے کا مطلب کوئی حد نہیں۔</p>
+      <div id="budget-fields"></div>
+      <button id="btn-save-budgets" class="btn btn-primary btn-block">بجٹ محفوظ کریں</button>
+    </div>
+
+    <div class="settings-section">
+      <h4>👥 خاندانی کوڈ</h4>
+      <p class="field-hint">یہ کوڈ دوسرے فون میں درج کریں تاکہ دونوں کا حساب ایک ساتھ Sync ہو۔ اسے کسی سے شیئر نہ کریں۔</p>
+      <div class="code-box" id="household-code-box" dir="ltr"></div>
+      <button id="btn-copy-code" class="btn btn-secondary btn-block">کوڈ کاپی کریں</button>
+    </div>
+
+    <div class="settings-section">
+      <button id="btn-signout" class="btn btn-danger btn-block">اس ڈیوائس سے سائن آؤٹ</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
